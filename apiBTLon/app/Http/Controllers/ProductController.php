@@ -9,7 +9,6 @@ use App\Http\Requests\ProductUpdateRequest;
 use App\Http\Requests\UploadProductImagesRequest;
 use App\Http\Resources\ProductImageResource;
 use App\Http\Resources\ProductResource;
-use App\Models\Product;
 use App\Repositories\Interfaces\ProductRepositoryInterface;
 use App\Services\ProductImageService;
 use Illuminate\Http\JsonResponse;
@@ -29,7 +28,7 @@ class ProductController extends BaseController
         $filters = $request->validated();
         $products = $this->productRepository->getPaginated($filters);
 
-        return $this->successWithPagiantion(
+        return $this->successWithPagination(
             $products,
             ProductResource::class,
             'retrieve data successfully.'
@@ -49,10 +48,11 @@ class ProductController extends BaseController
         );
     }
 
-    public function update(ProductUpdateRequest $request, int $id)
+    public function update(ProductUpdateRequest $request, string $slug)
     {
+        $product = $this->productRepository->findBySlug($slug);
         $updated = $this->productRepository->update(
-            $id,
+            $product->id,
             $request->validated()
         );
 
@@ -133,8 +133,7 @@ class ProductController extends BaseController
         if (!$product) {
             return $this->error(
                 'Product not found.',
-                [$product],
-                404
+                code: 404
             );
         }
         Gate::authorize('restore', $product);
@@ -186,6 +185,11 @@ class ProductController extends BaseController
     public function updateImages(Request $request, int $imageId, string $slug): JsonResponse
     {
         $product = $this->productRepository->findBySlug($slug);
+
+        if (!$product) {
+            return $this->error('Product not found.', [], 404);
+        }
+
         $request->validate([
             'image' => ['sometimes', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'set_as_main' => ['sometimes', 'boolean'],
@@ -207,6 +211,11 @@ class ProductController extends BaseController
     public function destroyImages(int $imageId, string $slug): JsonResponse
     {
         $product = $this->productRepository->findBySlug($slug);
+
+        if (!$product) {
+            return $this->error('Product not found.', [], 404);
+        }
+
         $this->productImageService->removeProductImage($product, $imageId);
 
         return response()->json([

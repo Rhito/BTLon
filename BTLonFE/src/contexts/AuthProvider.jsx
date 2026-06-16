@@ -41,6 +41,13 @@ export function AuthProvider({ children }) {
       .finally(() => setIsChecking(false));
   }, [clearAuth]);
 
+  // Listen for 401 from axios interceptor
+  useEffect(() => {
+    const handleExpired = () => clearAuth();
+    window.addEventListener("auth:expired", handleExpired);
+    return () => window.removeEventListener("auth:expired", handleExpired);
+  }, [clearAuth]);
+
   const login = useCallback(
     async (email, password) => {
       const res = await api.post("/auth/login", { email, password });

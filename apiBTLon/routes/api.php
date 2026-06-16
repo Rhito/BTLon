@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum', 'throttle:admin-api'])->group(function () {
     /** Orders */
     Route::prefix('orders')->group(function () {
         Route::get('export', [OrderController::class, 'export']);
+        Route::get('count', [OrderController::class, 'count']);
         Route::patch('{id}/restore', [OrderController::class, 'restore']);
         Route::delete('{id}/force-delete', [OrderController::class, 'forceDelete']);
     });

@@ -25,20 +25,17 @@ class ProductImageService
     {
         $filename = Str::uuid() . '.jpg';
 
-        $mainImage = $this->imageManager->decodeSplFileInfo($file)
-            ->scaleDown(width: 1200);
+        $decoded = $this->imageManager->decodeSplFileInfo($file);
+        $mainImage = (clone $decoded)->scaleDown(width: 1200);
 
         $mainImageData = (string) $mainImage->encodeUsingFormat(Format::JPEG, quality: 85);
 
         $imagePath = "products/images/{$filename}";
         Storage::disk('public')->put($imagePath, $mainImageData);
 
-        $thumbnail = $this->imageManager->decodeSplFileInfo($file)
-            ->cover(300, 300);
 
-        // $thumbnail = $this->imageManager->decodeSplFileInfo($file)
-        //     ->contain(300, 300)
-        //     ->resizeCanvas(300, 300, background: 'ffffff');
+        $thumbnail = (clone $decoded)->cover(300, 300);
+
 
         $thumbnailData = (string) $thumbnail->encodeUsingFormat(Format::JPEG, quality: 75);
 

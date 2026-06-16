@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:#--current",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -185,11 +185,13 @@
   },
   "active": "e85b8896f9719fb9",
   "lastOpenFiles": [
-    "Welcome Luc this is your task.md",
+    "Project Map.md",
     "UI Plan.md",
-    "Target.md",
     "Implementing BE Feature.md",
     "Diagram.md",
+    "Untitled.base",
+    "Welcome Luc this is your task.md",
+    "Target.md",
     "Creating Base.md",
     "Img/BTLon.drawio.jpg",
     "Untitled.canvas",

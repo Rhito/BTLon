@@ -41,8 +41,10 @@ export function CartProvider({ children }) {
   const [items, dispatch] = useReducer(cartReducer, cartService.load());
 
   useEffect(() => {
-    cartService.save(items);
+    const timer = setTimeout(() => cartService.save(items), 300);
+    return () => clearTimeout(timer);
   }, [items]);
+
 
   const addToCart = useCallback(
     async (product, quantity = 1) => {

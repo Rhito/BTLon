@@ -8,6 +8,19 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductImageResource extends JsonResource
 {
+    private function formatUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return asset(Storage::url($path));
+    }
+
     /**
      * Transform the resource into an array.
      *
@@ -18,8 +31,8 @@ class ProductImageResource extends JsonResource
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
-            'img_url' => $this->img_url ? asset(Storage::url($this->img_url)) : null,
-            'thumbnail_url' => $this->thumbnail_url ? asset(Storage::url($this->thumbnail_url)) : null,
+            'img_url' => $this->formatUrl($this->img_url),
+            'thumbnail_url' => $this->formatUrl($this->thumbnail_url),
             'is_main' => (bool) $this->is_main,
         ];
     }

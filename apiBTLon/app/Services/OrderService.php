@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Repositories\ProductRepository;
 use Carbon\Carbon;
 use App\Models\Order;
 use App\Models\Product;
@@ -18,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 class OrderService
 {
     protected OrderRepositoryInterface $orderRepository;
-    public function __construct(OrderRepositoryInterface $orderRepository)
+    public function __construct(OrderRepositoryInterface $orderRepository, protected ProductRepository $productRepository)
     {
         $this->orderRepository = $orderRepository;
     }
@@ -62,7 +63,6 @@ class OrderService
             Mail::to($order->customer_email)->send(new ConfirmOrderCheckout($order));
 
             return $order;
-
         });
     }
 
@@ -100,12 +100,19 @@ class OrderService
 
             // Hoàn lại stock khi hủy đơn
             if ($newStatus === OrderStatus::CANCELLED) {
-                foreach ($order->orderItems as $item) {
-                    if ($item->product) {
-                        $item->product->increment('stock', $item->quantity);
-                    }
+                $order->load('orderItems.product'); // Eager load (1 query)
+
+                // Batch update bằng single query
+                $updates = $order->orderItems
+                    ->filter(fn($item) => $item->product)
+                    ->groupBy('product_id')
+                    ->map(fn($items) => $items->sum('quantity'));
+
+                foreach ($updates as $productId => $qty) {
+                    $this->productRepository->find($productId)->increment('stock', $qty);
                 }
             }
+
 
             return $order;
         });
@@ -118,12 +125,12 @@ class OrderService
             throw new \Exception("Can not cancel the order.");
         }
 
-        if ($order->status !== OrderStatus::PENDING || $order->status == OrderStatus::CANCELLED)
+        if ($order->status !== OrderStatus::PENDING)
             throw new \Exception('Only cancel the order when it on pending status.');
 
         $token = Str::random(40);
         $order->update([
-            'cancel_token' => $token,
+            'cancel_token' => hash('sha256', $token),
             'cancel_token_expires_at' => Carbon::now()->addMinutes(15),
             'cancel_reason' => $data['cancel_reason'] ?? 'The customer (Guest) proactively requested to cancel the order through the system.',
         ]);
@@ -137,7 +144,7 @@ class OrderService
     public function confirmGuestCancel(array $data): Order
     {
         return DB::transaction(function () use ($data) {
-            $order = $this->orderRepository->getValidCancelOrder($data['cancel_token']);
+            $order = $this->orderRepository->getValidCancelOrder(hash('sha256', $data['cancel_token']));
             if (!$order) {
                 throw new NotFoundHttpException("TOKEN_EXPIRED_OR_INVALID|The verification token is invalid or has expired.");
             }
@@ -152,10 +159,15 @@ class OrderService
                 'cancel_token_expires_at' => null
             ]);
 
-            foreach ($order->orderItems as $item) {
-                if ($item->product) {
-                    $item->product->increment('stock', $item->quantity);
-                }
+            $order->load('orderItems.product');
+
+            $updates = $order->orderItems
+                ->filter(fn($item) => $item->product)
+                ->groupBy('product_id')
+                ->map(fn($items) => $items->sum('quantity'));
+
+            foreach ($updates as $productId => $qty) {
+                Product::where('id', $productId)->increment('stock', $qty);
             }
 
             return $order;

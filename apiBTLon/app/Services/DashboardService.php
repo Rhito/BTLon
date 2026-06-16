@@ -55,24 +55,37 @@ class DashboardService
                 $date = now()->subDays($daysAgo)->toDateString();
                 return [
                     'date' => $date,
-                    'total_orders' => $data[$date]->total_orders ?? 0,
-                    'revenue' => $data[$date]->revenue ?? 0,
+                    'total_orders' => $data->get($date)?->total_orders ?? 0,
+                    'revenue' => $data->get($date)?->revenue ?? 0,
                 ];
             })
             ->values()
             ->toArray();
     }
 
+    /**
+     * Tổng hợp dashboard data.
+     *
+     * Vì data đã pre-computed trong stats tables, queries rất nhẹ (<5ms).
+     * Cache chỉ để giảm DB round-trips khi nhiều admin cùng mở Dashboard.
+     */
     public function getSummary(): array
     {
-        return Cache::remember('dashboard:summary', now()->addMinutes(5), function () {
-            return [
-                'revenue_summary' => $this->getRevenueSummary(),
-                'orders_by_status' => $this->getOrdersByStatus(),
-                'top_selling' => $this->dashboardRepository->getTopSellingProducts(),
-                'low_stock_products' => $this->dashboardRepository->getLowStockProducts(),
-                'revenue_chart' => $this->getRevenueChart(),
-            ];
-        });
+        return [
+            // Revenue từ daily_revenue_stats — cực nhanh, cache ngắn
+            'revenue_summary' => Cache::remember('dashboard:revenue', now()->addMinutes(2), fn() => $this->getRevenueSummary()),
+
+            // Status counts — index scan, cache ngắn
+            'orders_by_status' => Cache::remember('dashboard:status', now()->addMinutes(2), fn() => $this->getOrdersByStatus()),
+
+            // Top selling từ product_sales_stats — cực nhanh
+            'top_selling' => Cache::remember('dashboard:top', now()->addMinutes(5), fn() => $this->dashboardRepository->getTopSellingProducts()),
+
+            // Low stock — bảng products nhỏ
+            'low_stock_products' => Cache::remember('dashboard:low_stock', now()->addMinutes(5), fn() => $this->dashboardRepository->getLowStockProducts()),
+
+            // Chart từ daily_revenue_stats — 7 rows
+            'revenue_chart' => Cache::remember('dashboard:chart', now()->addMinutes(2), fn() => $this->getRevenueChart()),
+        ];
     }
 }

@@ -1,34 +1,26 @@
-import api from "@/api/axiosInstance";
-
 const TOKEN_KEY = "sanctum_token";
-const NAME_KEY = "admin_name";
-const EMAIL_KEY = "admin_email";
+const USER_KEY = "admin_user";
 
+/**
+ * authService — read-only helper for admin info.
+ * Login/logout are handled by AuthProvider (single source of truth).
+ */
 const authService = {
-  login: async (credentials) => {
-    const res = await api.post("/auth/login", credentials);
+  isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
 
-    localStorage.setItem(TOKEN_KEY, res.data.token);
-    localStorage.setItem(NAME_KEY, res.data.user.name);
-    localStorage.setItem(EMAIL_KEY, res.data.user.email);
-
-    return res;
-  },
-
-  logout: async () => {
+  getAdminInfo: () => {
     try {
-      await api.post("/auth/logout");
-    } finally {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(NAME_KEY);
-      localStorage.removeItem(EMAIL_KEY);
+      const raw = localStorage.getItem(USER_KEY);
+      if (!raw) return { name: "Admin", email: "" };
+      const user = JSON.parse(raw);
+      return {
+        name: user?.name || "Admin",
+        email: user?.email || "",
+      };
+    } catch {
+      return { name: "Admin", email: "" };
     }
   },
-  isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
-  getAdminInfo: () => ({
-    name: localStorage.getItem(NAME_KEY) || "Admin",
-    email: localStorage.getItem(EMAIL_KEY) || "",
-  }),
 };
 
 export default authService;

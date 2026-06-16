@@ -9,6 +9,7 @@ import formatPrice from "@/utils/helpers/formatPrice";
 import Button from "@/components/ui/Button";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import EmptyState from "@/components/ui/EmptyState";
+import DOMPurify from "dompurify";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -28,8 +29,6 @@ export default function ProductDetail() {
         setProduct(res.data);
 
         // Thiết lập ảnh chính (ưu tiên ảnh có is_main = true, nếu không lấy ảnh đầu tiên)
-        console.log(res);
-
         const images = res.data.images || [];
         const defaultImage =
           images.find((img) => img.is_main)?.img_url ||
@@ -210,7 +209,11 @@ export default function ProductDetail() {
 
           {/* Mô tả sản phẩm */}
           <div className="prose prose-sm sm:prose text-gray-600 mb-8">
-            <div dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(product.description),
+              }}
+            />
           </div>
 
           {/* Trạng thái kho & Chọn số lượng */}

@@ -24,7 +24,7 @@ class CategoryController extends BaseController
         $filters = $request->validated();
         $categories = $this->categoryRepository->getPaginated($filters);
 
-        return $this->successWithPagiantion(
+        return $this->successWithPagination(
             $categories,
             CategoryResource::class,
             'retrieve data success.'

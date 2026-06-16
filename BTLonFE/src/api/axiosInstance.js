@@ -39,16 +39,12 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      clearAuth();
+      window.dispatchEvent(new Event("auth:expired"));
     }
 
     return Promise.reject(buildErrorPayload(error));
   },
 );
-
-function clearAuth() {
-  localStorage.removeItem("sanctum_token");
-}
 
 function buildErrorPayload(error) {
   return {

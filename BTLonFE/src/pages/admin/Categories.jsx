@@ -191,7 +191,7 @@ export default function Category() {
                           )}
                         </td>
                         <td className="py-3 px-4 text-gray-500 text-xs">
-                          {new Date(cat.created_at).toLocaleDateString()}
+                          {cat.created_at}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-end gap-1">

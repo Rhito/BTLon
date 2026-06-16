@@ -5,9 +5,10 @@ import productService from "@/services/productService";
 import categoryService from "@/services/categoryService";
 import { useApiCall } from "@/hooks/useApiCall";
 import { useToast } from "@/hooks/useToast";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Input, TextEditor, Textarea } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageManager from "@/components/admin/ImageManager";
+
 const INITIAL = {
   name: "",
   description: "",
@@ -211,13 +212,29 @@ export default function ProductForm() {
           onChange={handleNameChange}
         />
 
-        <Textarea
+        {/* <Textarea
           id="description"
           label="Description"
           rows={4}
           value={form.description}
           onChange={set("description")}
-        />
+        /> */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <TextEditor
+            id="description"
+            label="Description"
+            value={form.description}
+            onChange={(html) => {
+              setForm((prev) => ({
+                ...prev,
+                description: html,
+              }));
+            }}
+          />
+        </div>
 
         {/* Category multi-select */}
         <div>
@@ -305,7 +322,6 @@ export default function ProductForm() {
 
       {/* Images */}
       <section className="bg-white rounded-xl border border-gray-100 p-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Images</h2>
         <ImageManager
           existingImages={existingImages}
           onDeleteExisting={handleDeleteExisting}

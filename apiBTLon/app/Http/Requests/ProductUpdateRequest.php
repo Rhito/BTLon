@@ -14,11 +14,8 @@ class ProductUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $product = Product::find($this->route('product'));
-        \Log::info($product);
-        return $product
-            && $this->user()
-            && $this->user()->can('update', $product);
+        return $this->user()
+            && $this->user()->isAdmin();
     }
 
     /**
@@ -34,7 +31,7 @@ class ProductUpdateRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('products', 'name')
-                    ->ignore($this->route('product')),
+                    ->ignore($this->route('product', 'slug')),
             ],
 
             'description' => [

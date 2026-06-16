@@ -5,12 +5,10 @@ namespace App\Repositories;
 use App\Models\Category;
 use App\Repositories\Base\EloquentRepository;
 use App\Repositories\Interfaces\CategoryRepositoryInterface;
-use App\Trait\ApiResponser;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class CategoryRepository extends EloquentRepository implements CategoryRepositoryInterface
 {
-    use ApiResponser;
     public function __construct(Category $model)
     {
         parent::__construct($model);
@@ -24,7 +22,7 @@ class CategoryRepository extends EloquentRepository implements CategoryRepositor
     public function getPaginated(
         array $filters
     ): LengthAwarePaginator {
-        $query = $this->model->query();
+        $query = $this->model->query()->withCount('products');
 
         // Filter
         if (!empty($filters['filter'])) {

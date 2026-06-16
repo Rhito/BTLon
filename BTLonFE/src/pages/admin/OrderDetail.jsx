@@ -249,8 +249,6 @@ export default function OrderDetail() {
                     <tr key={item.id}>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          {console.log(item)}
-
                           {item && item.thumbnail_url ? (
                             <img
                               src={item.thumbnail_url}

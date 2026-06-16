@@ -312,7 +312,7 @@ ___
 
 ---
 
-### Target F — Quản lý Danh mục (Admin) #--current
+### Target F — Quản lý Danh mục (Admin)
 
 #### Trang danh sách (`/admin/categories`)
 - [x] Bảng danh mục:
@@ -370,32 +370,32 @@ ___
 ### Target H — Quản lý Đơn hàng (Admin)
 
 #### Trang danh sách (`/admin/orders`)
-- [ ] Bảng đơn hàng:
-	- [ ] Cột: Mã đơn, Khách hàng, SĐT, Tổng tiền, Thanh toán, Trạng thái, Ngày đặt, Hành động
-	- [ ] Status badge (màu theo trạng thái):
+- [x] Bảng đơn hàng:
+	- [x] Cột: Mã đơn, Khách hàng, SĐT, Tổng tiền, Thanh toán, Trạng thái, Ngày đặt, Hành động
+	- [x] Status badge (màu theo trạng thái):
 		- `pending` → vàng
 		- `confirmed` → xanh dương
 		- `shipping` → tím
 		- `delivered` → xanh lá
 		- `cancelled` → đỏ
-- [ ] Filters:
-	- [ ] Theo trạng thái (tabs hoặc dropdown)
-	- [ ] Theo ngày đặt (date range picker)
-	- [ ] Theo từ khóa (mã đơn, tên khách, SĐT)
-- [ ] Pagination
-- [ ] Nút "Export CSV" → gọi `GET /api/orders/export`, download file
+- [x] Filters:
+	- [x] Theo trạng thái (tabs hoặc dropdown)
+	- [x] Theo ngày đặt (date range picker)
+	- [x] Theo từ khóa (mã đơn, tên khách, SĐT)
+- [x] Pagination
+- [x] Nút "Export CSV" → gọi `GET /api/orders/export`, download file
 
 #### Trang/Modal chi tiết đơn hàng (`/admin/orders/:id`)
-- [ ] Thông tin khách hàng:
-	- [ ] Tên, SĐT, Email, Địa chỉ giao hàng, Ghi chú
-- [ ] Danh sách sản phẩm (bảng: ảnh, tên, SL, đơn giá, thành tiền)
-- [ ] Tổng tiền đơn hàng
-- [ ] Phương thức thanh toán
-- [ ] Cập nhật trạng thái:
-	- [ ] Dropdown/buttons cho luồng: pending → confirmed → shipping → delivered
-	- [ ] Nút "Hủy đơn" (nhập lý do, chỉ khi chưa delivered)
-	- [ ] Confirm dialog trước khi đổi trạng thái
-- [ ] Nút "Quay lại danh sách"
+- [x] Thông tin khách hàng:
+	- [x] Tên, SĐT, Email, Địa chỉ giao hàng, Ghi chú
+- [x] Danh sách sản phẩm (bảng: ảnh, tên, SL, đơn giá, thành tiền)
+- [x] Tổng tiền đơn hàng
+- [x] Phương thức thanh toán
+- [x] Cập nhật trạng thái:
+	- [x] Dropdown/buttons cho luồng: pending → confirmed → shipping → delivered
+	- [x] Nút "Hủy đơn" (nhập lý do, chỉ khi chưa delivered)
+	- [x] Confirm dialog trước khi đổi trạng thái
+- [x] Nút "Quay lại danh sách"
 
 ---
 
@@ -432,6 +432,9 @@ ___
 - [ ] Accessibility: focus states, ARIA labels, keyboard navigation
 
 ---
+
+ - [ ] Nhận description html cho product #--current
+
 
 ## Tóm tắt Routes
 

@@ -23,7 +23,10 @@ const orderService = {
     api.get("/orders/export", {
       params,
       responseType: "blob",
+      timeout: 300_000,
     }),
+
+  getOrdersCount: (params = {}) => api.get("/orders/count", { params }),
 };
 
 export default orderService;

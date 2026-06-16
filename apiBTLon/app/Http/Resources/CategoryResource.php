@@ -20,7 +20,9 @@ class CategoryResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'is_active' => $this->is_active,
-            'deleted_at' => $this->deleted_at
+            'deleted_at' => $this->deleted_at,
+            'created_at' => $this->created_at?->format('d/m/Y H:i:s'),
+            'products_count' => $this->whenCounted('products')
         ];
     }
 }

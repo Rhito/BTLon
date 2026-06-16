@@ -24,7 +24,7 @@ class OrderItemResource extends JsonResource
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
-            'product_name' => $this->product?->name ?? 'Sản phẩm đã bị xóa hoặc không tồn tại',
+            'product_name' => $this->product?->name ?? 'The product has been deleted or does not exist.',
             'quantity' => (int) $this->quantity,
             'price' => (float) $this->price,
             'sub_total' => (float) ($this->price * $this->quantity),

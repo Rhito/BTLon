@@ -19,7 +19,14 @@ class AuthController extends BaseController
         }
 
         $user = Auth::user();
-        $token = $user->createToken('auth_token', ['*'], now()->addMonth(1))->plainTextToken;
+        if (!$user->isAdmin()) {
+            Auth::logout();
+            return $this->error('You are not authorized.', [], 403);
+        }
+
+        $user->tokens()->delete();
+        $token = $user->createToken('auth_token', ['*'], now()->addHours(8))->plainTextToken;
+
         return $this->success('login successfully.', [
             'user' => new UserResource($user),
             'token' => $token,
@@ -40,7 +47,7 @@ class AuthController extends BaseController
     {
         return response()->json([
             'valid' => true,
-            'user' => $request->user(),
+            'user' => new UserResource($request->user()),
         ]);
     }
 }

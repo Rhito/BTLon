@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Base\BaseController;
-use App\Http\Requests\ComfirmCancelOrderRequest;
+use App\Http\Requests\ConfirmCancelOrderRequest;
 use App\Http\Requests\GuestCancelOrderRequest;
 use App\Http\Requests\OrderExportRequest;
 use App\Http\Requests\OrderIndexRequest;
@@ -15,6 +15,7 @@ use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class OrderController extends BaseController
 {
@@ -32,10 +33,26 @@ class OrderController extends BaseController
         $filters = $request->validated();
         $products = $this->orderRepository->getPaginated($filters);
 
-        return $this->successWithPagiantion(
+        return $this->successWithPagination(
             $products,
             OrderResource::class,
             'retrieve data successfully.'
+        );
+    }
+
+    public function count(OrderIndexRequest $request)
+    {
+        $filters = $request->validated();
+
+        // Cache count 5 phút — tránh COUNT(*) trên 2M+ rows mỗi lần đổi filter
+        $cacheKey = 'orders_count_' . md5(json_encode($filters));
+        $total = cache()->remember($cacheKey, now()->addMinutes(5), function () use ($filters) {
+            return $this->orderRepository->countFiltered($filters);
+        });
+
+        return $this->success(
+            'retrieve count successfully.',
+            ['total' => $total],
         );
     }
 
@@ -54,21 +71,31 @@ class OrderController extends BaseController
         } catch (\Exception $e) {
             return $this->error(
                 'Failed to update order status.',
-                [$e->getMessage()],
-                422
+                code: 422
             );
         }
     }
 
     public function destroy(int $id)
     {
-        $deleted = $this->orderRepository->delete($id);
+        $order = $this->orderRepository->find($id);
 
-        if (!$deleted) {
+        if (!$order) {
             return $this->error(
                 'Order not found.',
                 [],
                 404
+            );
+        }
+
+        Gate::authorize('delete', $order);
+        $deleted = $this->orderRepository->delete($id);
+
+        if (!$deleted) {
+            return $this->error(
+                'Order delete error.',
+                [],
+                500
             );
         }
 
@@ -79,13 +106,24 @@ class OrderController extends BaseController
 
     public function forceDelete(int $id)
     {
-        $deleted = $this->orderRepository->forceDelete($id);
+        $order = $this->orderRepository->find($id, ['*'], [], 'with');
 
-        if (!$deleted) {
+        if (!$order) {
             return $this->error(
                 'Order not found.',
                 [],
                 404
+            );
+        }
+
+        Gate::authorize('forceDelete', $order);
+        $deleted = $this->orderRepository->forceDelete($id);
+
+        if (!$deleted) {
+            return $this->error(
+                'Order delete error.',
+                [],
+                500
             );
         }
 
@@ -114,13 +152,24 @@ class OrderController extends BaseController
 
     public function restore(int $id)
     {
-        $deleted = $this->orderRepository->restore($id);
+        $order = $this->orderRepository->find($id, ['*'], [], 'with');
 
-        if (!$deleted) {
+        if (!$order) {
             return $this->error(
                 'Order not found.',
                 [],
                 404
+            );
+        }
+
+        Gate::authorize('restore', $order);
+        $deleted = $this->orderRepository->restore($id);
+
+        if (!$deleted) {
+            return $this->error(
+                'Order restore error.',
+                [],
+                500
             );
         }
 
@@ -148,8 +197,7 @@ class OrderController extends BaseController
         } catch (\Exception $e) {
             return $this->error(
                 'Failed when place an order.',
-                [$e->getMessage()],
-                422
+                code: 422
             );
         }
     }
@@ -160,14 +208,14 @@ class OrderController extends BaseController
             $this->orderService->requestGuestCancel($request->validated());
             return $this->success('A confirmation link has been sent to your email. Please check your inbox to complete the process.');
         } catch (\Exception $e) {
-            return $this->error('Request failed.', [$e->getMessage()], 422);
+            return $this->error('Request failed.', code: 422);
         }
     }
 
     public function trackOrder(Request $request)
     {
         $request->validate([
-            'order_code' => ['required', 'string', 'exists:orders,order_code'],
+            'order_code' => ['required', 'string'],
             'customer_email' => ['required', 'email'],
         ]);
 
@@ -188,7 +236,7 @@ class OrderController extends BaseController
     }
 
 
-    public function confirmCancel(ComfirmCancelOrderRequest $request): JsonResponse
+    public function confirmCancel(ConfirmCancelOrderRequest $request): JsonResponse
     {
         try {
             $order = $this->orderService->confirmGuestCancel($request->validated());
@@ -199,24 +247,22 @@ class OrderController extends BaseController
         } catch (\Exception $e) {
             return $this->error(
                 'Orders cannot be canceled.',
-                [$e->getMessage()],
-                422
+                code: 422
             );
         }
     }
 
     public function export(OrderExportRequest $request)
     {
+        set_time_limit(120);
+
         $filters = $request->validated();
         $filename = 'orders_' . now()->format('Y-m-d_His') . '.csv';
 
         return response()->streamDownload(function () use ($filters) {
             $handle = fopen('php://output', 'w');
-
-            // UTF-8 BOM để Excel đọc đúng tiếng Việt
             fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-            // Header row
             fputcsv($handle, [
                 'Order Code',
                 'Customer Name',
@@ -231,10 +277,9 @@ class OrderController extends BaseController
                 'Created At',
             ]);
 
-            // Stream từng chunk, tránh load toàn bộ vào memory
             $this->orderRepository
                 ->getForExport($filters)
-                ->chunk(500, function ($orders) use ($handle) {
+                ->chunkById(1000, function ($orders) use ($handle) {
                     foreach ($orders as $order) {
                         fputcsv($handle, [
                             $order->order_code,
@@ -243,13 +288,17 @@ class OrderController extends BaseController
                             $order->customer_phone,
                             $order->customer_address,
                             $order->payment_method,
-                            $order->status->value,
+                            $order->getRawOriginal('status'),
                             number_format($order->total_amount, 0, '.', ','),
                             $order->cancel_reason ?? '',
                             $order->note ?? '',
                             $order->created_at->format('d/m/Y H:i:s'),
                         ]);
                     }
+
+                    if (ob_get_level() > 0)
+                        ob_flush();
+                    flush();
                 });
 
             fclose($handle);
@@ -258,5 +307,8 @@ class OrderController extends BaseController
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
+
+
+
 
 }

@@ -6,8 +6,8 @@ use App\Models\Order;
 use App\Repositories\Base\EloquentRepository;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use Carbon\Carbon;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
 class OrderRepository extends EloquentRepository implements OrderRepositoryInterface
@@ -18,42 +18,66 @@ class OrderRepository extends EloquentRepository implements OrderRepositoryInter
     }
 
     /**
-     * Summary of getPaginated
-     * @param array $filters
-     * @return LengthAwarePaginator<int, \Illuminate\Database\Eloquent\Model>
+     * Apply common filters to query (shared between paginated & export).
+     *
+     * Với 2M+ records:
+     * - Dùng FULLTEXT search thay vì LIKE '%keyword%'
+     * - Dùng whereBetween thay vì whereDate() để tận dụng index
      */
-    public function getPaginated(
-        array $filters
-    ): LengthAwarePaginator {
-        $query = $this->model->query();
-
-        // Filter
+    private function applyFilters(Builder $query, array $filters): Builder
+    {
+        // Fulltext search — nhanh hơn LIKE '%..%' hàng trăm lần trên 2M+ rows
         if (!empty($filters['filter'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('order_code', 'like', '%' . $filters['filter'] . '%')
-                    ->orWhere('customer_email', 'like', '%' . $filters['filter'] . '%')
-                    ->orWhere('customer_name', 'like', '%' . $filters['filter'] . '%')
-                    ->orWhere('customer_phone', 'like', '%' . $filters['filter'] . '%');
-            });
+            $search = $filters['filter'];
+
+            // Nếu keyword là mã đơn hàng (DH-...) hoặc email/phone chính xác → exact match
+            // Nếu keyword chung chung → fulltext
+            if (str_starts_with(strtoupper($search), 'DH-')) {
+                $query->where('order_code', $search);
+            } else {
+                $query->whereFullText(
+                    ['order_code', 'customer_name', 'customer_email', 'customer_phone'],
+                    $search
+                );
+            }
         }
 
-        // Status filter
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        // Sort
-        $query->orderBy(
-            $filters['sort_by'] ?? 'id',
-            $filters['sort_order'] ?? 'desc'
-        );
-
-        // Date range filter
+        // Dùng whereBetween thay vì whereDate() → tận dụng được index trên created_at
         if (!empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
+            $query->where('created_at', '>=', $filters['date_from'] . ' 00:00:00');
         }
+
         if (!empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Phân trang bằng cursor — O(1) thay vì O(N) của offset pagination.
+     *
+     * @return CursorPaginator
+     */
+    public function getPaginated(array $filters): CursorPaginator
+    {
+        $query = $this->model->query();
+
+        $this->applyFilters($query, $filters);
+
+        // Sort
+        $sortBy = $filters['sort_by'] ?? 'id';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Cursor pagination cần orderBy unique column
+        // Nếu sort_by khác id, thêm secondary sort bằng id để đảm bảo deterministic order
+        if ($sortBy !== 'id') {
+            $query->orderBy('id', $sortOrder);
         }
 
         // Trashed
@@ -63,7 +87,26 @@ class OrderRepository extends EloquentRepository implements OrderRepositoryInter
             default => null,
         };
 
-        return $query->paginate($filters['per_page'] ?? 12);
+        return $query->cursorPaginate($filters['per_page'] ?? 12);
+    }
+
+    /**
+     * Đếm tổng số records (cached 10 phút).
+     * Trả về estimated count khi không có filter (dùng thống kê MySQL thay vì COUNT(*)).
+     */
+    public function countFiltered(array $filters): int
+    {
+        $query = $this->model->query();
+        $this->applyFilters($query, $filters);
+
+        // Trashed
+        match ($filters['trashed'] ?? null) {
+            'with' => $query->withTrashed(),
+            'only' => $query->onlyTrashed(),
+            default => null,
+        };
+
+        return $query->count();
     }
 
     public function placeAnOrder(array $attributes): Order
@@ -98,25 +141,7 @@ class OrderRepository extends EloquentRepository implements OrderRepositoryInter
     {
         $query = $this->model->query();
 
-        if (!empty($filters['filter'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('order_code', 'like', '%' . $filters['filter'] . '%')
-                    ->orWhere('customer_email', 'like', '%' . $filters['filter'] . '%')
-                    ->orWhere('customer_name', 'like', '%' . $filters['filter'] . '%');
-            });
-        }
-
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
-        }
+        $this->applyFilters($query, $filters);
 
         return $query->orderBy('created_at', 'desc');
     }

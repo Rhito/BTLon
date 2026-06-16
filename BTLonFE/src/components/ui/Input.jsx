@@ -1,6 +1,24 @@
-import React, { forwardRef } from "react";
-
-// shared class strings
+import React, { forwardRef, useEffect, useMemo } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import {
+  Bold,
+  Italic,
+  List,
+  Heading2,
+  ListOrdered,
+  Undo,
+  Redo,
+  Minus,
+} from "lucide-react";
+import BoldT from "@tiptap/extension-bold";
+import ItalicT from "@tiptap/extension-italic";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+import { Underline } from "@tiptap/extension-underline";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { Highlight } from "@tiptap/extension-highlight";
+import { Link } from "@tiptap/extension-link";
 
 const baseClasses = [
   "w-full rounded-md border bg-white px-3 text-sm text-gray-900",
@@ -191,5 +209,207 @@ export const Select = forwardRef(
     );
   },
 );
-
 Select.displayName = "Select";
+
+export function TextEditor({ value, onChange, error }) {
+  const extensions = useMemo(
+    () => [
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+      }),
+      BoldT.configure({ HTMLAttributes: { class: "font-bold" } }),
+      ItalicT.configure({ HTMLAttributes: { class: "italic" } }),
+      TextStyle,
+      Color,
+      Underline,
+      Highlight.configure({ HTMLAttributes: { class: "bg-yellow-200" } }),
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: "text-blue-500 underline cursor-pointer",
+        },
+      }),
+    ],
+    [],
+  );
+  const editor = useEditor({
+    extensions: extensions,
+    content: value ?? "",
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: "outline-none min-h-[180px] p-3 text-sm text-gray-800",
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (!editor) return;
+
+    // tránh loop vô hạn
+    if (editor.getHTML() !== (value ?? "")) {
+      editor.commands.setContent(value ?? "", false);
+    }
+  }, [editor, value]);
+
+  if (!editor) return null;
+
+  const btn = (isActive, action, title) => (
+    <button
+      type="button" // ← tránh submit form
+      title={title}
+      onMouseDown={(e) => {
+        e.preventDefault(); // ← giữ focus editor
+        action();
+      }}
+      className={[
+        "p-1.5 rounded transition-colors",
+        isActive
+          ? "bg-blue-100 text-blue-600"
+          : "text-gray-500 hover:bg-gray-100 hover:text-gray-800",
+      ].join(" ")}
+    >
+      {/* children injected via wrapper below */}
+    </button>
+  );
+
+  const ToolBtn = ({ icon: Icon, isActive, action, title }) => (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        action();
+      }}
+      className={[
+        "p-1.5 rounded transition-colors",
+        isActive
+          ? "bg-blue-100 text-blue-600"
+          : "text-gray-500 hover:bg-gray-100 hover:text-gray-800",
+      ].join(" ")}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+
+  return (
+    <div
+      className={[
+        "border rounded-md overflow-hidden bg-white",
+        error ? "border-red-500 ring-1 ring-red-500" : "border-gray-300",
+        "focus-within:border-blue-100 focus-within:ring-1 focus-within:ring-blue-500",
+        "transition-colors",
+      ].join(" ")}
+    >
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5 border-b border-gray-200 bg-gray-50">
+        <ToolBtn
+          icon={Bold}
+          isActive={editor.isActive("bold")}
+          action={() => editor.chain().focus().toggleBold().run()}
+          title="Bold"
+        />
+        <ToolBtn
+          icon={Italic}
+          isActive={editor.isActive("italic")}
+          action={() => editor.chain().focus().toggleItalic().run()}
+          title="Italic"
+        />
+
+        <div className="w-px h-4 bg-gray-200 mx-1" />
+
+        <ToolBtn
+          icon={Heading2}
+          isActive={editor.isActive("heading", { level: 2 })}
+          action={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+          title="Heading 2"
+        />
+
+        <div className="w-px h-4 bg-gray-200 mx-1" />
+
+        <ToolBtn
+          icon={List}
+          isActive={editor.isActive("bulletList")}
+          action={() => editor.chain().focus().toggleBulletList().run()}
+          title="Bullet list"
+        />
+        <ToolBtn
+          icon={ListOrdered}
+          isActive={editor.isActive("orderedList")}
+          action={() => editor.chain().focus().toggleOrderedList().run()}
+          title="Ordered list"
+        />
+
+        <div className="w-px h-4 bg-gray-200 mx-1" />
+
+        <ToolBtn
+          icon={Minus}
+          isActive={false}
+          action={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Divider"
+        />
+
+        <div className="flex-1" />
+
+        <ToolBtn
+          icon={Undo}
+          isActive={false}
+          action={() => editor.chain().focus().undo().run()}
+          title="Undo"
+        />
+        <ToolBtn
+          icon={Redo}
+          isActive={false}
+          action={() => editor.chain().focus().redo().run()}
+          title="Redo"
+        />
+      </div>
+
+      {/* Editor content */}
+      <EditorContent
+        editor={editor}
+        className="
+          [&_.ProseMirror]:outline-none
+          [&_.ProseMirror]:min-h-[180px]
+          [&_.ProseMirror]:p-3
+          [&_.ProseMirror]:text-sm
+          [&_.ProseMirror]:text-gray-800
+          [&_.ProseMirror]:leading-relaxed
+          [&_.ProseMirror_h2]:text-base
+          [&_.ProseMirror_h2]:font-semibold
+          [&_.ProseMirror_h2]:text-gray-900
+          [&_.ProseMirror_h2]:mt-3
+          [&_.ProseMirror_h2]:mb-1
+          [&_.ProseMirror_p]:mb-2
+          [&_.ProseMirror_p:last-child]:mb-0
+          [&_.ProseMirror_ul]:list-disc
+          [&_.ProseMirror_ul]:pl-5
+          [&_.ProseMirror_ul]:mb-2
+          [&_.ProseMirror_ol]:list-decimal
+          [&_.ProseMirror_ol]:pl-5
+          [&_.ProseMirror_ol]:mb-2
+          [&_.ProseMirror_li]:mb-0.5
+          [&_.ProseMirror_strong]:font-semibold
+          [&_.ProseMirror_em]:italic
+          [&_.ProseMirror_hr]:border-gray-200
+          [&_.ProseMirror_hr]:my-3
+          [&_.ProseMirror_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]
+          [&_.ProseMirror_.is-editor-empty:first-child::before]:text-gray-400
+          [&_.ProseMirror_.is-editor-empty:first-child::before]:pointer-events-none
+          [&_.ProseMirror_.is-editor-empty:first-child::before]:float-left
+          [&_.ProseMirror_.is-editor-empty:first-child::before]:h-0
+        "
+      />
+    </div>
+  );
+}
+
+TextEditor.displayName = "TextEditor";

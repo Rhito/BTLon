@@ -3,6 +3,7 @@ const productService = {
   // guest
   getProducts: (params = {}) => api.get("/products", { params }),
   getProductBySlug: (slug) => api.get(`/products/${slug}`),
+  getProductById: (id) => api.get(`/products/${id}`),
 
   // admin
   createProduct: (data) => api.post(`/products`, data),

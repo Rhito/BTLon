@@ -15,9 +15,9 @@ abstract class EloquentRepository implements EloquentRepositoryInterface
         $this->model = $model;
     }
 
-    public function all(array $columns = ['*'], array $relataions = []): Collection
+    public function all(array $columns = ['*'], array $relations = []): Collection
     {
-        return $this->model->with($relataions)->get($columns);
+        return $this->model->with($relations)->get($columns);
     }
 
     public function paginate(int $perPage = 12, array $columns = ['*'], array $relations = []): LengthAwarePaginator

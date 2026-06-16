@@ -91,3 +91,11 @@ ___
 - [x] Service: Biểu đồ doanh thu 7 ngày gần nhất (bonus)
 - [x] Controller: DashboardController
 - [x] Cache mỗi 5 phút và clear khi order thay đổi
+
+
+
+- [ ] Cursor cho Order data nhưng vẫn có go to N page
+- [x] multipart cho file -- thay vì multipart ta có thể chuyển qua chunk id, multipart yêu cầu cho hệ thống cao hơn
+
+
+

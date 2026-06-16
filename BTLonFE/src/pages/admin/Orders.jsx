@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   Search,
   Download,
@@ -15,9 +15,9 @@ import { useToast } from "@/hooks/useToast";
 import formatPrice from "@/utils/helpers/formatPrice";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import Pagination from "@/components/ui/Pagination";
 import EmptyState from "@/components/ui/EmptyState";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
+import SimplePagination from "@/components/ui/SimplePagination";
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", color: "yellow" },
@@ -37,26 +37,67 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [total, setTotal] = useState(null);
 
   // ── Pagination + Fetch ───────────────────────────────────────────────────
-  const { data, pagination, loading, setPage, setParams } = usePagination(
-    orderService.getOrders,
-    { initialParams: {} },
-  );
+  const {
+    data,
+    pagination,
+    loading,
+    params,
+    setParams,
+    goNext,
+    goPrevious,
+    canGoNext,
+    canGoPrevious,
+  } = usePagination(orderService.getOrders, { initialParams: {} });
+
+  // Chỉ fetch count khi filter thay đổi (không phải khi cursor navigation)
+  const [filterKey, setFilterKey] = useState("");
 
   useEffect(() => {
+    const key = JSON.stringify({
+      filter: debouncedSearch || undefined,
+      status: statusFilter || undefined,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
+    });
+
+    // Reset cursor + update params
     setParams({
       filter: debouncedSearch || undefined,
       status: statusFilter || undefined,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
     });
+
+    // Chỉ re-count khi filter thực sự thay đổi
+    if (key !== filterKey) {
+      setFilterKey(key);
+      orderService
+        .getOrdersCount({
+          filter: debouncedSearch || undefined,
+          status: statusFilter || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        })
+        .then((res) => setTotal(res.data?.total ?? null))
+        .catch(() => setTotal(null));
+    }
   }, [debouncedSearch, statusFilter, dateFrom, dateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Export CSV ───────────────────────────────────────────────────────────
   const handleExportCSV = async () => {
     try {
-      const res = await exportExec(() => orderService.exportOrders());
+      const res = await exportExec(() =>
+        orderService.exportOrders({
+          filter: search || undefined,
+          status: statusFilter || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        }),
+      );
+
       if (res) {
         const url = window.URL.createObjectURL(res);
         const link = document.createElement("a");
@@ -221,10 +262,7 @@ export default function Orders() {
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-gray-500 text-xs">
-                          {new Date(order.created_at).toLocaleString("vi-VN", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })}
+                          {order.created_at}
                         </td>
                         <td className="py-3 px-4 text-right">
                           <Link
@@ -241,18 +279,17 @@ export default function Orders() {
                 </tbody>
               </table>
             </div>
-
-            {pagination && pagination.last_page > 1 && (
-              <div className="p-4 border-t border-gray-100">
-                <Pagination
-                  current={pagination.current_page}
-                  total={pagination.last_page}
-                  totalItems={pagination.total}
-                  perPage={pagination.per_page}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
+            <div className="p-4 border-t border-gray-100">
+              <SimplePagination
+                canGoPrevious={canGoPrevious}
+                canGoNext={canGoNext}
+                onPrevious={goPrevious}
+                onNext={goNext}
+                perPage={pagination?.per_page}
+                itemCount={data.length}
+                total={total}
+              />
+            </div>
           </>
         )}
       </div>

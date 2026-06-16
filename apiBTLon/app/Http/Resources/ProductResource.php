@@ -26,7 +26,7 @@ class ProductResource extends JsonResource
                 'name' => $category->name,
                 'slug' => $category->slug,
             ]),
-            'description' => $this->description,
+            'description' => $this->description ? html_entity_decode($this->description) : null,
             'is_active' => $this->is_active,
             'deleted_at' => $this->deleted_at,
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
