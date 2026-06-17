@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Enums\UserRole;
 use App\Jobs\SendLowStockNotificationJob;
 use App\Models\Product;
 use App\Models\User;

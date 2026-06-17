@@ -39,11 +39,9 @@ class DatabaseSeeder extends Seeder
 
         dump(microtime(true) - $start);
         // 2. Admin User
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@shopmini.test',
-            'role' => 'admin',
-            'password' => bcrypt('password') // Using bcrypt explicitly
+        // Seed roles and permissions first
+        $this->call([
+            RoleSeeder::class,
         ]);
 
         // 3. Categories

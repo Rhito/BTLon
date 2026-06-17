@@ -13,7 +13,7 @@ class OrderPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->nage_orders');
     }
 
     /**
@@ -21,7 +21,7 @@ class OrderPolicy
      */
     public function view(User $user, Order $order): bool
     {
-        return $user->isAdmin();
+        return $user->can('manage_orders');
     }
 
     /**
@@ -37,7 +37,7 @@ class OrderPolicy
      */
     public function update(User $user, Order $order): bool
     {
-        return $user->isAdmin();
+        return $user->can('manage_orders');
     }
 
     /**
@@ -45,8 +45,7 @@ class OrderPolicy
      */
     public function delete(User $user, Order $order): bool
     {
-        return $user->isAdmin();
-        ;
+        return $user->can('manage_orders');
     }
 
     /**
@@ -54,8 +53,7 @@ class OrderPolicy
      */
     public function restore(User $user, Order $order): bool
     {
-        return $user->isAdmin();
-        ;
+        return $user->can('manage_orders');
     }
 
     /**
@@ -63,6 +61,6 @@ class OrderPolicy
      */
     public function forceDelete(User $user, Order $order): bool
     {
-        return $user->isSuperAdmin();
+        return $user->hasRole('Super Admin');
     }
 }

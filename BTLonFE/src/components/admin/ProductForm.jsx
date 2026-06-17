@@ -35,7 +35,7 @@ export default function ProductForm() {
   const [newPreviews, setNewPreviews] = useState([]); // [{file, url}]
   const [mainNewIndex, setMainNewIndex] = useState(0);
 
-  const { execute: saveExec, loading: saving } = useApiCall();
+  const { execute: saveExec, loading: saving, error: saveError } = useApiCall();
   const { execute: imgExec, loading: imgLoading } = useApiCall();
 
   // Load categories
@@ -103,6 +103,23 @@ export default function ProductForm() {
     return errs;
   };
 
+  // Sync backend errors
+  useEffect(() => {
+    if (saveError?.status === 422 && saveError?.data?.errors) {
+      const backendErrs = {};
+      Object.entries(saveError.data.errors).forEach(([key, msgs]) => {
+        backendErrs[key] = msgs[0];
+      });
+      setErrors((prev) => ({ ...prev, ...backendErrs }));
+      toast.error("Please check the form for errors.");
+      // Cuộn lên field đầu tiên bị lỗi
+      const firstErrorField = Object.keys(backendErrs)[0];
+      document.getElementById(firstErrorField)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (saveError) {
+      toast.error(saveError.message || "Failed to save product.");
+    }
+  }, [saveError, toast]);
+
   // ── Image handlers ─────────────────────────────────────────────────────────
 
   const handleFilesAdded = (files) => {
@@ -165,8 +182,7 @@ export default function ProductForm() {
     );
 
     if (!res) {
-      toast.error("Failed to save product.");
-      return;
+      return; // Error is handled by the useEffect above
     }
 
     // Upload new images if any

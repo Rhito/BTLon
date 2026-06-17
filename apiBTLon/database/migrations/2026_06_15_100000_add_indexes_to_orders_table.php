@@ -28,10 +28,12 @@ return new class extends Migration {
             $table->index('cancel_token', 'idx_orders_cancel_token');
 
             // Fulltext index cho tìm kiếm text (thay thế LIKE '%keyword%')
-            $table->fullText(
-                ['order_code', 'customer_name', 'customer_email', 'customer_phone'],
-                'ft_orders_search'
-            );
+            if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'sqlite') {
+                $table->fullText(
+                    ['order_code', 'customer_name', 'customer_email', 'customer_phone'],
+                    'ft_orders_search'
+                );
+            }
         });
     }
 
@@ -44,7 +46,9 @@ return new class extends Migration {
             $table->dropIndex('idx_orders_customer_email');
             $table->dropIndex('idx_orders_customer_phone');
             $table->dropIndex('idx_orders_cancel_token');
-            $table->dropFullText('ft_orders_search');
+            if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'sqlite') {
+                $table->dropFullText('ft_orders_search');
+            }
         });
     }
 };

@@ -14,6 +14,7 @@ import Pagination from "@/components/ui/Pagination";
 import EmptyState from "@/components/ui/EmptyState";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import formatPrice from "@/utils/helpers/formatPrice";
+import RequirePermission from "@/components/common/RequirePermission";
 
 export default function ProductList() {
   const navigate = useNavigate();
@@ -84,12 +85,14 @@ export default function ProductList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900">Products</h1>
-        <Button
-          leftIcon={<Plus className="h-4 w-4" />}
-          onClick={() => navigate("/admin/products/create")}
-        >
-          Add Product
-        </Button>
+        <RequirePermission permission="manage_products">
+          <Button
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={() => navigate("/admin/products/create")}
+          >
+            Add Product
+          </Button>
+        </RequirePermission>
       </div>
 
       {/* Toolbar */}
@@ -163,7 +166,9 @@ export default function ProductList() {
                     <th className="py-3 px-4 text-right">Sale</th>
                     <th className="py-3 px-4 text-center">Stock</th>
                     <th className="py-3 px-4 text-center">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <RequirePermission permission="manage_products">
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </RequirePermission>
                   </tr>
                 </thead>
                 <tbody>
@@ -252,38 +257,40 @@ export default function ProductList() {
                         </td>
 
                         {/* Actions */}
-                        <td className="py-2 px-4">
-                          <div className="flex items-center justify-end gap-1">
-                            {isDeleted ? (
-                              <button
-                                onClick={() => setRestoreTarget(p)}
-                                className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
-                                title="Restore"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </button>
-                            ) : (
-                              <>
+                        <RequirePermission permission="manage_products">
+                          <td className="py-2 px-4">
+                            <div className="flex items-center justify-end gap-1">
+                              {isDeleted ? (
                                 <button
-                                  onClick={() =>
-                                    navigate(`/admin/products/${p.slug}/edit`)
-                                  }
-                                  className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                  title="Edit"
+                                  onClick={() => setRestoreTarget(p)}
+                                  className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                                  title="Restore"
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <RotateCcw className="h-4 w-4" />
                                 </button>
-                                <button
-                                  onClick={() => setDeleteTarget(p)}
-                                  className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() =>
+                                      navigate(`/admin/products/${p.slug}/edit`)
+                                    }
+                                    className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteTarget(p)}
+                                    className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </RequirePermission>
                       </tr>
                     );
                   })}

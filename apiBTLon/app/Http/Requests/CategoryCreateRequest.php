@@ -14,7 +14,7 @@ class CategoryCreateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() && $this->user()->isAdmin();
+        return $this->user() && $this->user()->can('manage_categories');
     }
 
     /**

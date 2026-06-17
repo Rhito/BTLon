@@ -1,9 +1,9 @@
 import { Routes, Route, Navigate } from "react-router";
 import ProtectedRoute from "./ProtectedRoute";
+import RequirePermission from "@/components/common/RequirePermission";
 import NotFound from "@/pages/NotFound";
 import GuestLayout from "@/layouts/GuestLayout";
 import AdminLayout from "@/layouts/AdminLayout";
-import { AuthLayout } from "@/contexts/AuthProvider";
 import Home from "@/pages/guest/Home";
 import Product from "@/pages/guest/Product";
 import ProductList from "@/pages/Admin/ProductList";
@@ -34,23 +34,19 @@ export default function AppRouter() {
 
       <Route path="admin/login" element={<AdminLogin />} />
 
-      <Route path="admin" element={<AuthLayout />}>
-        <Route
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="categories" element={<Category />} />
-          <Route path="products" element={<ProductList />} />
-          <Route path="products/create" element={<ProductForm />} />
-          <Route path="products/:id/edit" element={<ProductForm />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="orders/:id" element={<OrderDetail />} />
-        </Route>
+      <Route path="admin" element={
+        <ProtectedRoute>
+          <AdminLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<RequirePermission permission="view_dashboard" fallback={<Navigate to="/admin/orders" replace />}><Dashboard /></RequirePermission>} />
+        <Route path="categories" element={<Category />} />
+        <Route path="products" element={<ProductList />} />
+        <Route path="products/create" element={<RequirePermission permission="manage_products" fallback={<Navigate to="/admin/products" replace />}><ProductForm /></RequirePermission>} />
+        <Route path="products/:id/edit" element={<RequirePermission permission="manage_products" fallback={<Navigate to="/admin/products" replace />}><ProductForm /></RequirePermission>} />
+        <Route path="orders" element={<RequirePermission permission="manage_orders"><Orders /></RequirePermission>} />
+        <Route path="orders/:id" element={<RequirePermission permission="manage_orders"><OrderDetail /></RequirePermission>} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

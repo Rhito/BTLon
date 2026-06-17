@@ -24,36 +24,36 @@ Route::middleware('throttle:public-api')->group(function () {
 Route::middleware(['auth:sanctum', 'throttle:admin-api'])->group(function () {
 
     /** Categories */
-    Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
-    Route::prefix('categories')->group(function () {
+    Route::apiResource('categories', CategoryController::class)->except(['index', 'show'])->middleware('permission:manage_categories');
+    Route::prefix('categories')->middleware('permission:manage_categories')->group(function () {
         Route::patch('{id}/restore', [CategoryController::class, 'restore']);
         Route::delete('{id}/force-delete', [CategoryController::class, 'forceDelete']);
     });
 
     /** Products */
-    Route::apiResource('products', ProductController::class)->except(['index', 'show']);
-    Route::prefix('products')->group(function () {
+    Route::apiResource('products', ProductController::class)->except(['index', 'show'])->middleware('permission:manage_products');
+    Route::prefix('products')->middleware('permission:manage_products')->group(function () {
         Route::patch('{id}/restore', [ProductController::class, 'restore']);
         Route::delete('{id}/force-delete', [ProductController::class, 'forceDelete']);
     });
 
-    Route::prefix('product-images')->group(function () {
+    Route::prefix('product-images')->middleware('permission:manage_products')->group(function () {
         Route::post('uploads/{slug}', [ProductController::class, 'uploadImages']);
         Route::post('{imageId}/update/{slug}', [ProductController::class, 'updateImages']);
         Route::delete('{imageId}/delete/{id}', [ProductController::class, 'destroyImages']);
     });
 
     /** Orders */
-    Route::prefix('orders')->group(function () {
+    Route::prefix('orders')->middleware('permission:manage_orders')->group(function () {
         Route::get('export', [OrderController::class, 'export']);
         Route::get('count', [OrderController::class, 'count']);
         Route::patch('{id}/restore', [OrderController::class, 'restore']);
         Route::delete('{id}/force-delete', [OrderController::class, 'forceDelete']);
     });
-    Route::apiResource('orders', OrderController::class);
+    Route::apiResource('orders', OrderController::class)->middleware('permission:manage_orders');
 
     /** Dashboard */
-    Route::get('dashboard', [DashboardController::class, 'index']);
+    Route::get('dashboard', [DashboardController::class, 'index'])->middleware('permission:view_dashboard');
 
     /** Auth */
     Route::post('auth/logout', [AuthController::class, 'logout']);

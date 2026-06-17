@@ -14,8 +14,7 @@ class ProductUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()
-            && $this->user()->isAdmin();
+        return $this->user() && $this->user()->can('manage_products');
     }
 
     /**
@@ -31,7 +30,10 @@ class ProductUpdateRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('products', 'name')
-                    ->ignore($this->route('product', 'slug')),
+                    ->ignore(
+                        $this->route('product'),
+                        'slug'
+                    )
             ],
 
             'description' => [

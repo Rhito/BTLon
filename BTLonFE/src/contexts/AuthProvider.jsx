@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router";
+import { useContext } from "react";
 import api from "@/api/axiosInstance";
 import { AuthContext } from "./AuthContext";
 
@@ -65,6 +66,23 @@ export function AuthProvider({ children }) {
     }
   }, [clearAuth]);
 
+  const hasPermission = useCallback(
+    (permissionName) => {
+      if (!user) return false;
+      if (user.roles?.includes("Super Admin")) return true;
+      return user.permissions?.includes(permissionName) || false;
+    },
+    [user],
+  );
+
+  const hasRole = useCallback(
+    (roleName) => {
+      if (!user) return false;
+      return user.roles?.includes(roleName) || false;
+    },
+    [user],
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -74,6 +92,8 @@ export function AuthProvider({ children }) {
         isChecking,
         login,
         logout,
+        hasPermission,
+        hasRole,
       }}
     >
       {children}
@@ -81,10 +101,11 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function AuthLayout() {
-  return (
-    <AuthProvider>
-      <Outlet />
-    </AuthProvider>
-  );
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

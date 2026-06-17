@@ -12,6 +12,7 @@ import Pagination from "@/components/ui/Pagination";
 import EmptyState from "@/components/ui/EmptyState";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import CategoryForm from "@/components/admin/CategoryForm";
+import RequirePermission from "@/components/common/RequirePermission";
 import { useEffect } from "react";
 
 export default function Category() {
@@ -95,12 +96,14 @@ export default function Category() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900">Categories</h1>
-        <Button
-          leftIcon={<Plus className="h-4 w-4" />}
-          onClick={handleOpenCreate}
-        >
-          Add Category
-        </Button>
+        <RequirePermission permission="manage_categories">
+          <Button
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={handleOpenCreate}
+          >
+            Add Category
+          </Button>
+        </RequirePermission>
       </div>
 
       {/* Search */}
@@ -155,7 +158,9 @@ export default function Category() {
                     <th className="py-3 px-4 text-center">Products</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-left">Created</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <RequirePermission permission="manage_categories">
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </RequirePermission>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,36 +198,38 @@ export default function Category() {
                         <td className="py-3 px-4 text-gray-500 text-xs">
                           {cat.created_at}
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-end gap-1">
-                            {isDeleted ? (
-                              <button
-                                onClick={() => setRestoreTarget(cat)}
-                                className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
-                                title="Restore"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </button>
-                            ) : (
-                              <>
+                        <RequirePermission permission="manage_categories">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-1">
+                              {isDeleted ? (
                                 <button
-                                  onClick={() => handleOpenEdit(cat)}
-                                  className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                  title="Edit"
+                                  onClick={() => setRestoreTarget(cat)}
+                                  className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                                  title="Restore"
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <RotateCcw className="h-4 w-4" />
                                 </button>
-                                <button
-                                  onClick={() => setDeleteTarget(cat)}
-                                  className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleOpenEdit(cat)}
+                                    className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteTarget(cat)}
+                                    className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </RequirePermission>
                       </tr>
                     );
                   })}

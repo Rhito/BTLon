@@ -15,28 +15,32 @@ const navItems = [
     to: "/admin/dashboard",
     label: "Dashboard",
     Icon: LayoutDashboard,
+    permission: "view_dashboard",
   },
   {
     to: "/admin/categories",
     label: "Categories",
     Icon: LayoutGrid,
+    permission: "manage_categories",
   },
   {
     to: "/admin/products",
     label: "Products",
     Icon: Package,
+    permission: "manage_products",
   },
   {
     to: "/admin/orders",
     label: "Orders",
     Icon: ClipboardList,
+    permission: "manage_orders",
   },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { logout } = useAuth();
+  const { logout, hasPermission } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -71,12 +75,15 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems.map(({ to, label, Icon }) => (
-          <NavLink key={to} to={to} className={linkClass}>
-            <Icon className="h-5 w-5 shrink-0" />
-            <span>{label}</span>
-          </NavLink>
-        ))}
+        {navItems.map(({ to, label, Icon, permission }) => {
+          if (permission && !hasPermission(permission)) return null;
+          return (
+            <NavLink key={to} to={to} className={linkClass}>
+              <Icon className="h-5 w-5 shrink-0" />
+              <span>{label}</span>
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Logout */}

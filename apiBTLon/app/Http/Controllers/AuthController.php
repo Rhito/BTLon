@@ -19,9 +19,11 @@ class AuthController extends BaseController
         }
 
         $user = Auth::user();
-        if (!$user->isAdmin()) {
+
+        // Chặn nếu chưa được gán Role cụ thể (tránh trường hợp lọt vào do không có quyền nào)
+        if ($user->roles->isEmpty()) {
             Auth::logout();
-            return $this->error('You are not authorized.', [], 403);
+            return $this->error('Your account has no assigned roles. Please contact super admin.', [], 403);
         }
 
         $user->tokens()->delete();

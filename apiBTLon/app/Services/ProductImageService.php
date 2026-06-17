@@ -18,14 +18,21 @@ class ProductImageService
     public function __construct(FileService $fileService)
     {
         $this->fileService = $fileService;
-        $this->imageManager = ImageManager::usingDriver(Driver::class);
+    }
+
+    protected function getImageManager(): ImageManager
+    {
+        if (!isset($this->imageManager)) {
+            $this->imageManager = ImageManager::usingDriver(Driver::class);
+        }
+        return $this->imageManager;
     }
 
     public function upload(UploadedFile $file): array
     {
         $filename = Str::uuid() . '.jpg';
 
-        $decoded = $this->imageManager->decodeSplFileInfo($file);
+        $decoded = $this->getImageManager()->decodeSplFileInfo($file);
         $mainImage = (clone $decoded)->scaleDown(width: 1200);
 
         $mainImageData = (string) $mainImage->encodeUsingFormat(Format::JPEG, quality: 85);
