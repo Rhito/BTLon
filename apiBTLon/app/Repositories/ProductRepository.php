@@ -72,9 +72,7 @@ class ProductRepository extends EloquentRepository implements ProductRepositoryI
         match ($filters['sort_by'] ?? 'latest') {
             'latest' => $query->latest(),
 
-            'best_selling' => $query
-                ->withSum('orderItems', 'quantity')
-                ->orderByDesc('order_items_sum_quantity'),
+            'best_selling' => $query->orderByDesc('sold_count'),
 
             'price_asc' => $query->orderByRaw('COALESCE(sale_price, price) ASC'),
 

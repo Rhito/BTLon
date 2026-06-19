@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/common/Modal";
 import Pagination from "@/components/ui/Pagination";
+import { Select } from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import formatPrice from "@/utils/helpers/formatPrice";
@@ -119,19 +120,17 @@ export default function ProductList() {
         </div>
 
         {/* Category filter */}
-        <select
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className="rounded-md border border-gray-300 py-2 px-3 text-sm text-gray-700
-            focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <div className="w-48 shrink-0">
+          <Select
+            id="categoryId"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            options={[
+              { value: "", label: "All Categories" },
+              ...categories.map((c) => ({ value: c.id, label: c.name }))
+            ]}
+          />
+        </div>
       </div>
 
       {/* Table */}

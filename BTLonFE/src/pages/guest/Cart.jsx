@@ -32,7 +32,8 @@ function QuantityInput({ value, max, onChange }) {
           if (!isNaN(val)) onChange(Math.min(Math.max(1, val), max));
         }}
         className="h-8 w-10 text-center text-sm font-medium border-x border-gray-200
-          focus:outline-none focus:ring-0 bg-white"
+          focus:outline-none focus:ring-0 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
       />
 
       <button

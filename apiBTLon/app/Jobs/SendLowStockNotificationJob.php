@@ -32,7 +32,7 @@ class SendLowStockNotificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $admins = User::admins()->get();
+        $admins = User::role(['super-admin'])->get();
 
         if ($admins->isEmpty()) {
             return;

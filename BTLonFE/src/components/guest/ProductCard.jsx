@@ -63,7 +63,7 @@ export default function ProductCard({ product, showAddToCart = true }) {
       </a>
 
       {/* Badges */}
-      {discountPct && (
+      {discountPct > 0 && (
         <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
           -{discountPct}%
         </span>

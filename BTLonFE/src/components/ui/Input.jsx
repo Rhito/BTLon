@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useMemo } from "react";
+import React, { forwardRef, useEffect, useMemo, useState, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -10,6 +10,8 @@ import {
   Undo,
   Redo,
   Minus,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import BoldT from "@tiptap/extension-bold";
 import ItalicT from "@tiptap/extension-italic";
@@ -32,6 +34,8 @@ const stateClasses = {
   default: "border-gray-300",
   error: "border-red-500 focus:ring-red-500 focus:border-red-500",
 };
+
+const scrollbarClasses = "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300/50 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400/80 [&::-webkit-scrollbar-thumb]:rounded-full";
 
 // Label + Helper / Error text
 const Label = ({ htmlFor, required, children }) =>
@@ -152,6 +156,163 @@ export const Textarea = forwardRef(
 
 Textarea.displayName = "Textarea";
 
+export const MultiSelect = forwardRef(
+  (
+    {
+      id,
+      label,
+      hint,
+      error,
+      required,
+      options = [],
+      placeholder = "Select options",
+      className = "",
+      value = [], // array of selected values
+      onChange,
+      disabled,
+      ...rest
+    },
+    ref,
+  ) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const containerRef = useRef(null);
+    const searchInputRef = useRef(null);
+
+    // Focus search when dropdown opens & reset when closed
+    useEffect(() => {
+      if (isOpen && searchInputRef.current) {
+        setTimeout(() => searchInputRef.current.focus(), 10);
+      } else if (!isOpen) {
+        setSearchQuery("");
+      }
+    }, [isOpen]);
+
+    // Handle click outside to close dropdown
+    useEffect(() => {
+      const handleClickOutside = (e) => {
+        if (containerRef.current && !containerRef.current.contains(e.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const state = error ? "error" : "default";
+
+    const handleToggle = (optionValue) => {
+      const newValue = value.includes(optionValue)
+        ? value.filter((v) => v !== optionValue)
+        : [...value, optionValue];
+      
+      onChange?.(newValue);
+    };
+
+    const filteredOptions = options.filter(opt => 
+      opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+      <div className="flex flex-col" ref={containerRef}>
+        <Label htmlFor={id} required={required}>
+          {label}
+        </Label>
+        <div className="relative">
+          {/* Custom Dropdown Trigger */}
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => !disabled && setIsOpen(!isOpen)}
+            className={`${baseClasses} ${stateClasses[state]} min-h-[40px] py-1.5 w-full flex items-center justify-between cursor-pointer text-left ${disabled ? "bg-gray-50 cursor-not-allowed" : ""} ${className}`}
+          >
+            <div className="flex flex-wrap gap-1.5 items-center flex-1">
+              {value.length === 0 ? (
+                 <span className="text-gray-400 px-1">{placeholder}</span>
+              ) : (
+                 <div className="flex flex-wrap gap-1.5">
+                    {value.map(val => {
+                       const opt = options.find(o => o.value === val);
+                       if (!opt) return null;
+                       return (
+                         <span key={val} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium border border-blue-200">
+                            {opt.label}
+                            <div 
+                              onClick={(e) => { e.stopPropagation(); handleToggle(val); }} 
+                              className="hover:bg-blue-200 text-blue-500 hover:text-blue-700 rounded-full p-0.5 cursor-pointer transition-colors"
+                            >
+                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </div>
+                         </span>
+                       )
+                    })}
+                 </div>
+              )}
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-gray-400 transition-transform duration-200 shrink-0 ml-2 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {/* Custom Dropdown Menu */}
+          {isOpen && (
+            <div className="absolute z-50 mt-1 w-full rounded-lg bg-white shadow-lg border border-gray-100 py-1 text-sm ring-1 ring-black ring-opacity-5 focus:outline-none flex flex-col max-h-[300px] animate-in fade-in zoom-in-95 duration-100 origin-top">
+              {/* Search Box (Sticky) */}
+              <div className="p-2 border-b border-gray-100 shrink-0">
+                <div className="relative">
+                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Options List */}
+              <div className={`overflow-y-auto flex-1 ${scrollbarClasses}`}>
+                {filteredOptions.map((opt) => {
+                  const isSelected = value.includes(opt.value);
+                  return (
+                    <label
+                      key={opt.value}
+                      className={`flex items-center gap-3 cursor-pointer select-none py-2 px-3 ${
+                        opt.disabled
+                          ? "text-gray-300 cursor-not-allowed bg-gray-50/50"
+                          : "hover:bg-gray-50 text-gray-700"
+                      } transition-colors`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" 
+                        checked={isSelected}
+                        disabled={opt.disabled}
+                        onChange={() => handleToggle(opt.value)}
+                      />
+                      <span className={`block truncate ${isSelected ? "font-medium text-gray-900" : ""}`}>{opt.label}</span>
+                    </label>
+                  );
+                })}
+                {filteredOptions.length === 0 && (
+                  <div className="py-4 px-4 text-gray-500 text-center text-sm">No results found</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <HelperText error={error} hint={hint} />
+      </div>
+    );
+  },
+);
+MultiSelect.displayName = "MultiSelect";
+
 export const Select = forwardRef(
   (
     {
@@ -163,23 +324,63 @@ export const Select = forwardRef(
       options = [],
       placeholder,
       className = "",
+      value,
+      defaultValue,
+      onChange,
+      disabled,
       ...rest
     },
     ref,
   ) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [internalValue, setInternalValue] = useState(value ?? defaultValue ?? "");
+    const containerRef = useRef(null);
+
+    // Sync external value updates
+    useEffect(() => {
+      if (value !== undefined) setInternalValue(value);
+    }, [value]);
+
+    // Handle click outside to close dropdown
+    useEffect(() => {
+      const handleClickOutside = (e) => {
+        if (containerRef.current && !containerRef.current.contains(e.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     const state = error ? "error" : "default";
+    const selectedOption = options.find((o) => o.value == internalValue);
+
+    const handleSelect = (optionValue) => {
+      setInternalValue(optionValue);
+      setIsOpen(false);
+      
+      // Trigger original onChange if provided
+      if (onChange) {
+        onChange({ target: { name: rest.name, id, value: optionValue } });
+      }
+    };
 
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col" ref={containerRef}>
         <Label htmlFor={id} required={required}>
           {label}
         </Label>
         <div className="relative">
+          {/* Hidden native select to preserve form compatibility & refs */}
           <select
             ref={ref}
             id={id}
             required={required}
-            className={`${baseClasses} ${stateClasses[state]} h-10 pr-9 appearance-none cursor-pointer ${className}`}
+            value={internalValue}
+            onChange={(e) => handleSelect(e.target.value)}
+            disabled={disabled}
+            className="sr-only"
+            tabIndex={-1}
             {...rest}
           >
             {placeholder && (
@@ -187,22 +388,62 @@ export const Select = forwardRef(
                 {placeholder}
               </option>
             )}
-            {options.map(({ value, label, disabled }) => (
-              <option key={value} value={value} disabled={disabled}>
+            {options.map(({ value, label, disabled: optDisabled }) => (
+              <option key={value} value={value} disabled={optDisabled}>
                 {label}
               </option>
             ))}
           </select>
-          {/* Chevron icon */}
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </span>
+
+          {/* Custom Dropdown Trigger */}
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => !disabled && setIsOpen(!isOpen)}
+            className={`${baseClasses} ${stateClasses[state]} h-10 w-full flex items-center justify-between cursor-pointer text-left ${
+              !selectedOption ? "text-gray-400" : "text-gray-900"
+            } ${disabled ? "bg-gray-50 cursor-not-allowed" : ""} ${className}`}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
+          >
+            <span className="block truncate">
+              {selectedOption ? selectedOption.label : placeholder || "Select an option"}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {/* Custom Dropdown Menu */}
+          {isOpen && (
+            <div className={`absolute z-50 mt-1 w-full rounded-lg bg-white shadow-lg border border-gray-100 py-1 text-sm ring-1 ring-black ring-opacity-5 focus:outline-none max-h-60 overflow-auto animate-in fade-in zoom-in-95 duration-100 origin-top ${scrollbarClasses}`}>
+              {options.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => !opt.disabled && handleSelect(opt.value)}
+                  className={`relative cursor-pointer select-none py-2.5 pl-4 pr-10 ${
+                    opt.disabled
+                      ? "text-gray-300 cursor-not-allowed bg-gray-50/50"
+                      : opt.value == internalValue
+                      ? "bg-blue-50 text-blue-700 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  } transition-colors`}
+                >
+                  <span className="block truncate">{opt.label}</span>
+                  {opt.value == internalValue && (
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600">
+                      <Check className="h-4 w-4" strokeWidth={2.5} />
+                    </span>
+                  )}
+                </div>
+              ))}
+              {options.length === 0 && (
+                <div className="py-2.5 px-4 text-gray-500 text-center">No options</div>
+              )}
+            </div>
+          )}
         </div>
         <HelperText error={error} hint={hint} />
       </div>

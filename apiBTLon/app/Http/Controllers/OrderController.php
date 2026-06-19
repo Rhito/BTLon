@@ -190,6 +190,7 @@ class OrderController extends BaseController
                     'order_code' => $order->order_code,
                     'total_amount' => $order->total_amount,
                     'customer_name' => $order->customer_name,
+                    'customer_email' => $order->customer_email,
                     'items' => OrderItemResource::collection($order->orderItems),
                 ],
                 201

@@ -37,6 +37,7 @@ class OrderService
                     throw new \Exception("The product {$product->name} is currently out of stock or does not have enough quantity available($product->stock).");
 
                 $product->decrement('stock', $cartItem['quantity']);
+                $product->increment('sold_count', $cartItem['quantity']);
 
                 $itemPrice = $product->sale_price ?? $product->price;
                 $totalAmount += $itemPrice * $cartItem['quantity'];
@@ -109,7 +110,11 @@ class OrderService
                     ->map(fn($items) => $items->sum('quantity'));
 
                 foreach ($updates as $productId => $qty) {
-                    $this->productRepository->find($productId)->increment('stock', $qty);
+                    $product = $this->productRepository->find($productId);
+                    if ($product) {
+                        $product->increment('stock', $qty);
+                        $product->decrement('sold_count', $qty);
+                    }
                 }
             }
 
@@ -167,7 +172,11 @@ class OrderService
                 ->map(fn($items) => $items->sum('quantity'));
 
             foreach ($updates as $productId => $qty) {
-                Product::where('id', $productId)->increment('stock', $qty);
+                $prod = Product::where('id', $productId)->first();
+                if ($prod) {
+                    $prod->increment('stock', $qty);
+                    $prod->decrement('sold_count', $qty);
+                }
             }
 
             return $order;

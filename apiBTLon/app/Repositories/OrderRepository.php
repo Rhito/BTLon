@@ -125,11 +125,25 @@ class OrderRepository extends EloquentRepository implements OrderRepositoryInter
 
     public function getOrderByCodeAndEmail(array $attributes): ?Order
     {
-        return $this->model->where('order_code', $attributes['order_code'])
-            ->where('customer_email', $attributes['customer_email'])
-            ->first();
-    }
+        $query = $this->model
+            ->where('order_code', $attributes['order_code'])
+            ->where('customer_email', $attributes['customer_email']);
 
+        // \Log::info('Find order', [
+        //     'order_code' => $attributes['order_code'],
+        //     'customer_email' => $attributes['customer_email'],
+        //     'sql' => $query->toSql(),
+        //     'bindings' => $query->getBindings(),
+        // ]);
+
+        $order = $query->first();
+
+        // \Log::info('Order result', [
+        //     'order' => $order?->toArray(),
+        // ]);
+
+        return $order;
+    }
     public function getValidCancelOrder(string $token): ?Order
     {
         return $this->model->where('cancel_token', $token)

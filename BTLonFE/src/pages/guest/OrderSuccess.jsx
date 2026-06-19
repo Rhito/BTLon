@@ -12,6 +12,7 @@ export default function OrderSuccess() {
   const cleared = useRef(false);
 
   const orderCode = location.state?.order_code ?? "—";
+  const customerEmail = location.state?.customer_email ?? "";
 
   // Clear cart once on mount
   useEffect(() => {
@@ -79,7 +80,18 @@ export default function OrderSuccess() {
 
       {/* Actions */}
       <div className="flex flex-col gap-3">
-        <Button onClick={() => navigate("/track-order")}>Track My Order</Button>
+        <Button
+          onClick={() =>
+            navigate("/track-order", {
+              state: {
+                order_code: orderCode,
+                customer_email: customerEmail,
+              },
+            })
+          }
+        >
+          Track My Order
+        </Button>
         <Button variant="ghost" onClick={() => navigate("/products")}>
           Continue Shopping
         </Button>

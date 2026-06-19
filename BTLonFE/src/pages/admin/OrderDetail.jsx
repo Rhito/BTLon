@@ -132,7 +132,7 @@ export default function OrderDetail() {
             </h1>
             <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
-              Order Date: {new Date(order.created_at).toLocaleString("vi-VN")}
+              Order Date: {order.created_at}
             </p>
           </div>
         </div>

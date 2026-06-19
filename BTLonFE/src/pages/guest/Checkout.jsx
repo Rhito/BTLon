@@ -68,9 +68,12 @@ export default function Checkout() {
 
     try {
       const res = await orderService.checkout(payload);
-      // clearCart();
+
       navigate("/order-success", {
-        state: { order_code: res.data?.order_code || res?.order_code },
+        state: {
+          order_code: res.data?.order_code || res?.order_code,
+          customer_email: res.data?.customer_email || res?.customer_email,
+        },
         replace: true,
       });
     } catch (err) {

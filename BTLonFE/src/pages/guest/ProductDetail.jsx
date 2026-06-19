@@ -247,7 +247,8 @@ export default function ProductDetail() {
                   value={quantity}
                   onChange={handleInputChange}
                   disabled={isOutOfStock}
-                  className="flex-1 w-full h-full text-center text-gray-900 font-medium bg-transparent border-none focus:ring-0 p-0 sm:text-sm appearance-none outline-none disabled:opacity-50"
+                  className="flex-1 w-full h-full text-center text-gray-900 font-medium bg-transparent focus:ring-0 p-0 sm:text-sm appearance-none outline-none disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none border-x border-gray-200"
                   min="1"
                   max={product.stock}
                 />

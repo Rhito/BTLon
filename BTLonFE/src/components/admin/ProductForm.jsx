@@ -5,7 +5,7 @@ import productService from "@/services/productService";
 import categoryService from "@/services/categoryService";
 import { useApiCall } from "@/hooks/useApiCall";
 import { useToast } from "@/hooks/useToast";
-import { Input, TextEditor, Textarea } from "@/components/ui/Input";
+import { Input, Textarea, Select, TextEditor, MultiSelect } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageManager from "@/components/admin/ImageManager";
 
@@ -85,12 +85,7 @@ export default function ProductForm() {
     if (errors[field]) setErrors((p) => ({ ...p, [field]: undefined }));
   };
 
-  const handleCategoryChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map((o) =>
-      Number(o.value),
-    );
-    setForm((prev) => ({ ...prev, category_ids: selected }));
-  };
+
 
   // Validate
   const validate = () => {
@@ -253,27 +248,16 @@ export default function ProductForm() {
         </div>
 
         {/* Category multi-select */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Categories
-          </label>
-          <select
-            multiple
-            value={form.category_ids.map(String)}
-            onChange={handleCategoryChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-gray-400 mt-1">
-            Hold Ctrl/Cmd to select multiple
-          </p>
-        </div>
+        <MultiSelect
+          id="category_ids"
+          label="Categories"
+          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+          value={form.category_ids}
+          onChange={(newValues) => {
+            setForm((prev) => ({ ...prev, category_ids: newValues }));
+          }}
+          placeholder="Select categories..."
+        />
       </section>
 
       {/* Pricing & stock */}

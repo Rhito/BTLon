@@ -18,6 +18,7 @@ import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import SimplePagination from "@/components/ui/SimplePagination";
+import { Select } from "../../components/ui/Input";
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", color: "yellow" },
@@ -157,18 +158,18 @@ export default function Orders() {
           </label>
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <select
+            <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm appearance-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-            >
-              <option value="">All</option>
-              {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "All" },
+                ...Object.entries(STATUS_CONFIG).map(([key, config]) => ({
+                  value: key,
+                  label: config.label || key,
+                })),
+              ]}
+            />
           </div>
         </div>
 
@@ -254,7 +255,7 @@ export default function Orders() {
                           {formatPrice(order.total_amount)}
                         </td>
                         <td className="py-3 px-4 text-center text-xs text-gray-500 uppercase tracking-wider">
-                          {order.payment_method === "cod" ? "COD" : "BANKING"}
+                          {order.payment_method === "COD" ? "COD" : "BANKING"}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <Badge variant={statusCfg.color}>
